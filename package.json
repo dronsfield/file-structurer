@@ -1,0 +1,30 @@
+{
+  "name": "file-structurer",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": "npm run build && node dist/test",
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dronsfield/file-structurer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dronsfield/file-structurer/issues"
+  },
+  "homepage": "https://github.com/dronsfield/file-structurer#readme",
+  "devDependencies": {
+    "typescript": "^3.8.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@types/node": "^13.11.1"
+  }
+}
