@@ -1,3 +1,3 @@
 import thing from './index'
 
-thing()
+thing({ path: 'lol' })

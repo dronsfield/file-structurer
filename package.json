@@ -2,11 +2,13 @@
   "name": "file-structurer",
   "version": "0.0.1",
   "description": "",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "test": "npm run build && node dist/test",
     "build": "tsc",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
   },
   "repository": {
     "type": "git",
