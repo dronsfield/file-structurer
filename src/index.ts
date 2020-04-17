@@ -1,36 +1,63 @@
 import * as fs from 'fs'
 import * as pathLib from 'path'
 
-interface Props {
+function editFile(props: {
   path: string
+  transform: (input: string[]) => string[]
+  outputPath?: string
+}) {
+  const { path, transform, outputPath } = props
+
+  const originalData = fs.readFileSync(path, { encoding: 'utf8' })
+  const transformedData = transform(originalData.split('\n')).join('\n')
+  fs.writeFileSync(outputPath || path, transformedData)
 }
-const foo = (props: Props) => {
+
+function newFile(props: { path: string; data?: string }) {
+  const { path, data } = props
+  fs.writeFileSync(path, data || '')
+}
+
+function newFolder(props: { path: string }) {
   const { path } = props
-  console.log({ path })
-  console.log('hm')
+  fs.mkdirSync(path)
+}
+
+function ascendImports(lines: string[]): string[] {
+  return lines.map((line) => {
+    return line
+      .replace(`from '../`, `from '../../`)
+      .replace(`from "../`, `from "../../`)
+      .replace(`from './`, `from '../`)
+      .replace(`from "./`, `from "../`)
+  })
+}
+
+function convertFileToFolder(props: { path: string }) {
+  const { path } = props
 
   const ext = pathLib.extname(path)
   const baseName = pathLib.basename(path, ext)
   const dir = pathLib.dirname(path)
 
-  const newFolder = pathLib.join(dir, baseName)
-  const indexFile = pathLib.join(newFolder, 'index') + ext
-  const mainFile = pathLib.join(newFolder, baseName) + ext
-  const testFile = pathLib.join(newFolder, baseName) + '.spec' + ext
+  const newFolderPath = pathLib.join(dir, baseName)
+  const indexFilePath = pathLib.join(newFolderPath, 'index') + ext
+  const mainFilePath = pathLib.join(newFolderPath, baseName) + ext
+  const testFilePath = pathLib.join(newFolderPath, baseName) + '.spec' + ext
 
-  fs.mkdirSync(newFolder)
-  fs.writeFileSync(indexFile, '')
-  fs.writeFileSync(mainFile, '')
-  fs.writeFileSync(testFile, '')
+  newFolder({ path: newFolderPath })
+  newFile({ path: indexFilePath })
+  editFile({ path, transform: ascendImports, outputPath: mainFilePath })
+  newFile({ path: testFilePath })
 
   return {
-    newFolder,
-    indexFile,
-    mainFile,
-    testFile
+    paths: {
+      newFolder: newFolderPath,
+      indexFile: indexFilePath,
+      mainFile: mainFilePath,
+      testFile: testFilePath
+    }
   }
-
-  // fs.writeFileSync(`${path}.waow`, `wagwan my g`)
 }
 
-export default foo
+export default convertFileToFolder
