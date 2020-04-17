@@ -1,6 +1,11 @@
 import * as fs from 'fs'
 import * as pathLib from 'path'
 
+function readFile(props: { path: string }) {
+  const { path } = props
+  return fs.readFileSync(path, { encoding: 'utf8' })
+}
+
 function editFile(props: {
   path: string
   transform: (input: string[]) => string[]
@@ -8,7 +13,7 @@ function editFile(props: {
 }) {
   const { path, transform, outputPath } = props
 
-  const originalData = fs.readFileSync(path, { encoding: 'utf8' })
+  const originalData = readFile({ path })
   const transformedData = transform(originalData.split('\n')).join('\n')
   fs.writeFileSync(outputPath || path, transformedData)
 }
@@ -33,6 +38,32 @@ function ascendImports(lines: string[]): string[] {
   })
 }
 
+function compileTemplate(props: {
+  name: string
+  data?: { [key: string]: string }
+}) {
+  const { name, data = {} } = props
+  try {
+    const templatePath = pathLib.join(
+      __dirname,
+      `../templates/${name}.template`
+    )
+    const template = readFile({
+      path: templatePath
+    })
+    const compiled = template.replace(
+      /{{([\s\S]+?)}}/g,
+      (match: string, key: string) => {
+        return data[key] || ''
+      }
+    )
+    return compiled
+  } catch (err) {
+    console.log('compileTemplate failed', err && err.message)
+    return ''
+  }
+}
+
 function convertFileToFolder(props: { path: string }) {
   const { path } = props
 
@@ -45,10 +76,19 @@ function convertFileToFolder(props: { path: string }) {
   const mainFilePath = pathLib.join(newFolderPath, baseName) + ext
   const testFilePath = pathLib.join(newFolderPath, baseName) + '.spec' + ext
 
+  const indexFileData = compileTemplate({
+    name: 'index',
+    data: { name: baseName }
+  })
+  const testFileData = compileTemplate({
+    name: 'test',
+    data: { name: baseName }
+  })
+
   newFolder({ path: newFolderPath })
-  newFile({ path: indexFilePath })
+  newFile({ path: indexFilePath, data: indexFileData })
   editFile({ path, transform: ascendImports, outputPath: mainFilePath })
-  newFile({ path: testFilePath })
+  newFile({ path: testFilePath, data: testFileData })
 
   return {
     paths: {
