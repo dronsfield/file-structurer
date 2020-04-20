@@ -64,30 +64,40 @@ function compileTemplate(props: {
   }
 }
 
-function convertFileToFolder(props: { path: string }) {
-  const { path } = props
+function createComponentFolder(props: {
+  path: string
+  name: string
+  ext: string
+  mainFileData?: string
+}) {
+  let { path, name, ext, mainFileData } = props
 
-  const ext = pathLib.extname(path)
-  const baseName = pathLib.basename(path, ext)
-  const dir = pathLib.dirname(path)
-
-  const newFolderPath = pathLib.join(dir, baseName)
+  const newFolderPath = pathLib.join(path, name)
   const indexFilePath = pathLib.join(newFolderPath, 'index') + ext
-  const mainFilePath = pathLib.join(newFolderPath, baseName) + ext
-  const testFilePath = pathLib.join(newFolderPath, baseName) + '.spec' + ext
+  const mainFilePath = pathLib.join(newFolderPath, name) + ext
+  const testFilePath = pathLib.join(newFolderPath, name) + '.spec' + ext
 
   const indexFileData = compileTemplate({
     name: 'index',
-    data: { name: baseName }
+    data: { name }
   })
   const testFileData = compileTemplate({
     name: 'test',
-    data: { name: baseName }
+    data: { name }
   })
+
+  if (!mainFileData) {
+    if (ext === 'tsx' || ext === 'jsx') {
+      mainFileData = compileTemplate({
+        name: `component.${ext}`,
+        data: { name }
+      })
+    }
+  }
 
   newFolder({ path: newFolderPath })
   newFile({ path: indexFilePath, data: indexFileData })
-  editFile({ path, transform: ascendImports, outputPath: mainFilePath })
+  newFile({ path: mainFilePath, data: mainFileData })
   newFile({ path: testFilePath, data: testFileData })
 
   return {
@@ -96,8 +106,25 @@ function convertFileToFolder(props: { path: string }) {
       indexFile: indexFilePath,
       mainFile: mainFilePath,
       testFile: testFilePath
+    },
+    data: {
+      indexFile: indexFileData,
+      mainFile: mainFileData,
+      testFile: testFileData
     }
   }
+}
+
+function convertFileToFolder(props: { path: string }) {
+  const { path } = props
+
+  const ext = pathLib.extname(path)
+  const name = pathLib.basename(path, ext)
+  const dir = pathLib.dirname(path)
+
+  const mainFileData = ascendImports(readFile({ path }).split('\n')).join('\n')
+
+  return createComponentFolder({ path: dir, name, ext, mainFileData })
 }
 
 export default convertFileToFolder

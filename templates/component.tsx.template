@@ -1,0 +1,12 @@
+import React from 'react'
+
+const {{name}}: React.FC<{
+  foo: string,
+  bar: number
+}> = (props) => {
+  const { foo, bar } = props;
+
+  return <div>{{name}}</div>
+};
+
+export default {{name}};
