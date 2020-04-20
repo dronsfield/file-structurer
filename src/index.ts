@@ -6,6 +6,11 @@ function readFile(props: { path: string }) {
   return fs.readFileSync(path, { encoding: 'utf8' })
 }
 
+function deleteFile(props: { path: string }) {
+  const { path } = props
+  return fs.unlinkSync(path)
+}
+
 function editFile(props: {
   path: string
   transform: (input: string[]) => string[]
@@ -117,8 +122,8 @@ function createComponentFolder(props: {
   }
 }
 
-function convertFileToFolder(props: { path: string }) {
-  const { path } = props
+function convertFileToFolder(props: { path: string; deleteFile?: boolean }) {
+  const { path, deleteFile: deleteFileProp } = props
 
   const ext = pathLib.extname(path)
   const name = pathLib.basename(path, ext)
@@ -126,7 +131,9 @@ function convertFileToFolder(props: { path: string }) {
 
   const mainFileData = ascendImports(readFile({ path }).split('\n')).join('\n')
 
-  return createComponentFolder({ path: dir, name, ext, mainFileData })
+  const output = createComponentFolder({ path: dir, name, ext, mainFileData })
+  if (deleteFileProp) deleteFile({ path })
+  return output
 }
 
 export { createComponentFolder, convertFileToFolder }
