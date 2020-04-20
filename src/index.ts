@@ -72,10 +72,12 @@ function createComponentFolder(props: {
 }) {
   let { path, name, ext, mainFileData } = props
 
+  if (ext.startsWith('.')) ext = ext.slice(1)
+
   const newFolderPath = pathLib.join(path, name)
-  const indexFilePath = pathLib.join(newFolderPath, 'index') + ext
-  const mainFilePath = pathLib.join(newFolderPath, name) + ext
-  const testFilePath = pathLib.join(newFolderPath, name) + '.spec' + ext
+  const indexFilePath = `${pathLib.join(newFolderPath, 'index')}.${ext}`
+  const mainFilePath = `${pathLib.join(newFolderPath, name)}.${ext}`
+  const testFilePath = `${pathLib.join(newFolderPath, name)}.spec.${ext}`
 
   const indexFileData = compileTemplate({
     name: 'index',
@@ -127,4 +129,4 @@ function convertFileToFolder(props: { path: string }) {
   return createComponentFolder({ path: dir, name, ext, mainFileData })
 }
 
-export default convertFileToFolder
+export { createComponentFolder, convertFileToFolder }
