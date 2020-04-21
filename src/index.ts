@@ -99,6 +99,8 @@ function createComponentFolder(props: {
         name: `component.${ext}`,
         data: { name }
       })
+    } else {
+      mainFileData = ''
     }
   }
 
