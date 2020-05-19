@@ -7,7 +7,8 @@
     "forceConsistentCasingInFileNames": true ,
     "outDir": "./dist",
     "declaration": true,
-    "types": ["node"]
+    "types": ["node", "jest"],
+    "jsx": "react"
   },
   "include": [
     "src/**/*"

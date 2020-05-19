@@ -43,25 +43,20 @@ function ascendImports(lines: string[]): string[] {
   })
 }
 
-function compileTemplate(props: {
-  name: string
-  data?: { [key: string]: string }
-}) {
-  const { name, data = {} } = props
+function compileTemplate(input: string, data: { [key: string]: string } = {}) {
+  const compiled = input.replace(
+    /{{([\s\S]+?)}}/g,
+    (match: string, key: string) => {
+      return data[key] || ''
+    }
+  )
+  return compiled
+}
+
+function compileTemplateFile(path: string, data?: { [key: string]: string }) {
   try {
-    const templatePath = pathLib.join(
-      __dirname,
-      `../templates/${name}.template`
-    )
-    const template = readFile({
-      path: templatePath
-    })
-    const compiled = template.replace(
-      /{{([\s\S]+?)}}/g,
-      (match: string, key: string) => {
-        return data[key] || ''
-      }
-    )
+    const template = readFile({ path })
+    const compiled = compileTemplate(template, data)
     return compiled
   } catch (err) {
     console.log('compileTemplate failed', err && err.message)
@@ -69,59 +64,62 @@ function compileTemplate(props: {
   }
 }
 
+function getTemplatePath(fileName: string) {
+  return pathLib.join(__dirname, `../templates/${fileName}.template`)
+}
+const defaultTemplates: { [key: string]: string } = {
+  '{{name}}.{{ext}}': getTemplatePath('component.{{ext}}'),
+  '{{name}}.spec.{{ext}}': getTemplatePath('test'),
+  'index.{{ext}}': getTemplatePath('index')
+}
+const defaultMainFile = '{{name}}.{{ext}}'
+
 function createComponentFolder(props: {
   path: string
   name: string
   ext: string
   mainFileData?: string
+  templates?: { [key: string]: string }
+  mainFile?: string
 }) {
-  let { path, name, ext, mainFileData } = props
+  let {
+    path,
+    name,
+    ext,
+    mainFileData,
+    templates = defaultTemplates,
+    mainFile = defaultMainFile
+  } = props
 
   if (ext.startsWith('.')) ext = ext.slice(1)
+  const templateData = { name, ext }
 
   const newFolderPath = pathLib.join(path, name)
-  const indexFilePath = `${pathLib.join(newFolderPath, 'index')}.${ext}`
-  const mainFilePath = `${pathLib.join(newFolderPath, name)}.${ext}`
-  const testFilePath = `${pathLib.join(newFolderPath, name)}.spec.${ext}`
-
-  const indexFileData = compileTemplate({
-    name: 'index',
-    data: { name }
-  })
-  const testFileData = compileTemplate({
-    name: 'test',
-    data: { name }
-  })
-
-  if (!mainFileData) {
-    if (ext === 'tsx' || ext === 'jsx') {
-      mainFileData = compileTemplate({
-        name: `component.${ext}`,
-        data: { name }
-      })
-    } else {
-      mainFileData = ''
-    }
-  }
-
   newFolder({ path: newFolderPath })
-  newFile({ path: indexFilePath, data: indexFileData })
-  newFile({ path: mainFilePath, data: mainFileData })
-  newFile({ path: testFilePath, data: testFileData })
 
-  return {
-    paths: {
-      newFolder: newFolderPath,
-      indexFile: indexFilePath,
-      mainFile: mainFilePath,
-      testFile: testFilePath
-    },
-    data: {
-      indexFile: indexFileData,
-      mainFile: mainFileData,
-      testFile: testFileData
-    }
+  const output = {
+    paths: { mainFile: '', other: [] as string[] }
   }
+
+  Object.keys(templates).forEach((fileName) => {
+    const isMainFile = fileName === mainFile
+    const compiledFileName = compileTemplate(fileName, templateData)
+    const templatePath = templates[fileName]
+    const compiledTemplatePath = compileTemplate(templatePath, templateData)
+    const newFilePath = pathLib.join(newFolderPath, compiledFileName)
+    const newFileData =
+      isMainFile && mainFileData
+        ? mainFileData
+        : compileTemplateFile(compiledTemplatePath, templateData)
+    newFile({ path: newFilePath, data: newFileData })
+    if (isMainFile) {
+      output.paths.mainFile = newFilePath
+    } else {
+      output.paths.other.push(newFilePath)
+    }
+  })
+
+  return output
 }
 
 function convertFileToFolder(props: { path: string; deleteFile?: boolean }) {
